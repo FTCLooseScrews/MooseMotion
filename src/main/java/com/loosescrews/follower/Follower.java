@@ -115,13 +115,14 @@ public class Follower {
     }
 
     private Pose2d getTranslationalVector(Pose2d currentRobotPose, Pose2d projectedPose) {
-        Pose2d targetPose = projectedPose;
-        Pose2d poseError = targetPose.minus(currentRobotPose);
+
+        //the projected pose is the target pose
+        Pose2d poseError = projectedPose.minus(currentRobotPose);
 
         double translationalVectorMagnitude = TRANSLATIONAL.calculate(0, poseError.vec().mag);
         Vec2d translationalVector = new Vec2d(Math.min(Math.max(0,translationalVectorMagnitude), 1), poseError.vec().theta);
 
-        double headingError = Angle.getRotationSide(currentRobotPose.theta, targetPose.theta) * Angle.smallestDifference(currentRobotPose.theta, targetPose.theta);
+        double headingError = Angle.getRotationSide(currentRobotPose.theta, projectedPose.theta) * Angle.smallestDifference(currentRobotPose.theta, projectedPose.theta);
         double headingCorrection = HEADING.calculate(0, headingError);
 
         return new Pose2d(translationalVector, Math.min(Math.max(-1, headingCorrection), 1));
@@ -143,10 +144,10 @@ public class Follower {
 
     private Vec2d getDriveVector(Pose2d currentRobotPose, Pose2d projectedPoseOnCurve) {
         Vec2d nextWaypointVec = path.getNextWaypoint(currentRobotPose, lastRobotPose);
-        Pose2d current = projectedPoseOnCurve;
 
         if (nextWaypointVec != null) {
-            Vec2d drivePoseDelta = nextWaypointVec.minus(current.vec());
+            //projected pose is where the robot is currently supposed to be
+            Vec2d drivePoseDelta = nextWaypointVec.minus(projectedPoseOnCurve.vec());
             double driveVectorMagnitude = DRIVE.calculate(0, drivePoseDelta.mag);
             Vec2d driveVector = new Vec2d(Math.min(Math.max(-1,driveVectorMagnitude), 1), drivePoseDelta.theta);
 
