@@ -8,7 +8,7 @@ import com.loosescrews.util.NanoClock;
 import com.loosescrews.util.PIDFController;
 
 public class Follower {
-    public Pose2d lastUpdateVels = null;
+    public Pose2d lastUpdateVels = new Pose2d();
     protected Path path;
     protected Pose2d holdingPose = null;
     protected Pose2d lastRobotPose = null;
