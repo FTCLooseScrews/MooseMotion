@@ -33,10 +33,14 @@ public class CubicBezier extends ParametricCurve {
 
         if (point.getT() == 0) return waypoints.get(0).getWaypointVec();
 
-        for (int i = 0; i < waypoints.size(); i++) {
+        for (int i = 1; i < waypoints.size(); i++) {
             if (waypoints.get(i).getT() >= point.getT()) {
                 if (i >= 997) {
                     return null;
+                }
+                if (waypoints.get(i).getWaypointVec().distTo(pose.vec()) <=
+                        waypoints.get(i-1).getWaypointVec().distTo(pose.vec())) {
+                    return waypoints.get(i == waypoints.size()-1 ? i : i+1).getWaypointVec();
                 }
                 return waypoints.get(i).getWaypointVec();
             }
