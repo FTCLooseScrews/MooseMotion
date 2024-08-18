@@ -14,7 +14,7 @@ public class Line extends ParametricCurve {
 
         Vec2d line = Vec2d.fromCartesian(x2-x1, y2-y1);
         for (int i = 1; i <= 1000; i++) {
-            waypoints.add(new Waypoint(x1 + line.x * i/1000.0, y1 + line.y * i/1000.0));
+            waypoints.add(new Waypoint(x1 + line.x * i/1000.0, y1 + line.y * i/1000.0, i/1000.0));
         }
     }
 

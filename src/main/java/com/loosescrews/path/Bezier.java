@@ -25,7 +25,7 @@ public class Bezier extends ParametricCurve {
         y = new BezierCurve(yp);
 
         for (int i = 1; i <= 1000; i++) {
-            waypoints.add(new Waypoint(Vec2d.fromCartesian(x.get(i/1000.0), y.get(i/1000.0))));
+            waypoints.add(new Waypoint(Vec2d.fromCartesian(x.get(i/1000.0), y.get(i/1000.0)), i/1000.0));
         }
     }
     @Override

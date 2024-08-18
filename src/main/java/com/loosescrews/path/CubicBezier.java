@@ -18,7 +18,7 @@ public class CubicBezier extends ParametricCurve {
         y = new CubicBezierCurve(first.y, second.y, third.y, fourth.y);
 
         for (int i = 1; i <= 1000; i++) {
-            waypoints.add(new Waypoint(Vec2d.fromCartesian(x.get(i/1000.0), y.get(i/1000.0))));
+            waypoints.add(new Waypoint(Vec2d.fromCartesian(x.get(i/1000.0), y.get(i/1000.0)), i/1000.0));
         }
     }
     @Override
@@ -28,24 +28,39 @@ public class CubicBezier extends ParametricCurve {
 
     @Override
     public Vec2d getNextWaypoint(Pose2d pose, Pose2d last) {
-        Vec2d projectedPoint = ProjectedPoint.projectFrom(this, pose).getPoint();
-        Waypoint minimumDist = waypoints.get(0);
-        int minI = 0;
-        Waypoint secondMinimumDist = waypoints.get(1);
-        int nMinI = 1;
+        ProjectedPoint point = ProjectedPoint.projectFrom(this, pose);
+        Vec2d projectedPoint = point.getPoint();
 
-        for (int i = 2; i < waypoints.size(); i++) {
-            if (waypoints.get(i).getWaypointVec().distTo(projectedPoint) < minimumDist.getWaypointVec().distTo(projectedPoint)) {
-                minimumDist = waypoints.get(i);
-                minI = i;
-            }
-            else if (waypoints.get(i).getWaypointVec().distTo(projectedPoint) < secondMinimumDist.getWaypointVec().distTo(projectedPoint)) {
-                secondMinimumDist = waypoints.get(i);
-                nMinI = i;
+        if (point.getT() == 0) return waypoints.get(0).getWaypointVec();
+
+        for (int i = 0; i < waypoints.size(); i++) {
+            if (waypoints.get(i).getT() >= point.getT()) {
+                if (i >= 995) {
+                    return null;
+                }
+                return waypoints.get(i).getWaypointVec();
             }
         }
-        if (minI == waypoints.size() - 1) return null;
-        return minI > nMinI ? minimumDist.getWaypointVec() : secondMinimumDist.getWaypointVec();
+
+        return null;
+//
+//        Waypoint minimumDist = waypoints.get(0);
+//        int minI = 0;
+//        Waypoint secondMinimumDist = waypoints.get(1);
+//        int nMinI = 1;
+//
+//        for (int i = 2; i < waypoints.size(); i++) {
+//            if (waypoints.get(i).getWaypointVec().distTo(projectedPoint) < minimumDist.getWaypointVec().distTo(projectedPoint)) {
+//                minimumDist = waypoints.get(i);
+//                minI = i;
+//            }
+//            else if (waypoints.get(i).getWaypointVec().distTo(projectedPoint) < secondMinimumDist.getWaypointVec().distTo(projectedPoint)) {
+//                secondMinimumDist = waypoints.get(i);
+//                nMinI = i;
+//            }
+//        }
+//        if (minI == waypoints.size() - 1) return null;
+//        return minI > nMinI ? minimumDist.getWaypointVec() : secondMinimumDist.getWaypointVec();
     }
     public Vec2d get(double t) {
         return Vec2d.fromCartesian(x.get(t), y.get(t));

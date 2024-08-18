@@ -28,16 +28,21 @@ public abstract class ParametricCurve {
 
     public static class Waypoint {
         private Vec2d wp;
-        public Waypoint(Vec2d a) {
+        private double t;
+        public Waypoint(Vec2d a, double t) {
             this.wp = a;
+            this.t = t;
         }
 
-        public Waypoint(double x, double y) {
-            this(Vec2d.fromCartesian(x, y));
+        public Waypoint(double x, double y, double t) {
+            this(Vec2d.fromCartesian(x, y), t);
         }
 
         public Vec2d getWaypointVec() {
             return wp;
+        }
+        public double getT() {
+            return t;
         }
     }
 }
