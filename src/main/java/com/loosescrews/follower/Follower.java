@@ -9,6 +9,10 @@ import com.loosescrews.util.PIDFController;
 
 public class Follower {
     public Pose2d lastUpdateVels = new Pose2d();
+    public Vec2d lastDriveVec = new Vec2d();
+    public Pose2d lastTranslationalVec = new Pose2d();
+    public Vec2d lastCentripetalVec = new Vec2d();
+    public Vec2d nextWaypoint = new Vec2d();
     protected Path path;
     protected Pose2d holdingPose = null;
     protected Pose2d lastRobotPose = null;
@@ -38,7 +42,7 @@ public class Follower {
     }
 
     public Follower(PIDFController T, PIDFController D, PIDFController H, double mass, double scalingf, double maxVel) {
-        this(T, D, H, mass, scalingf, maxVel,2.5);
+        this(T, D, H, mass, scalingf, maxVel,1.2);
     }
 
     public void followPath(Path path) {
@@ -88,11 +92,13 @@ public class Follower {
             else {
                 endTime = clock.seconds();
             }
-
+            lastDriveVec = new Vec2d();
             return returnWheelSpeeds(corrective.x, corrective.y, translationalVector.getHeading(), currentRobotPose.theta);
         }
 
         if (corrective.mag == 1) {
+            lastTranslationalVec = translationalVector;
+            lastCentripetalVec = centripetalForceVector;
             return returnWheelSpeeds(corrective.x, corrective.y, translationalVector.getHeading(), currentRobotPose.theta);
         }
         else {
@@ -103,6 +109,10 @@ public class Follower {
             else {
                 finalVector = corrective.plus(driveVector);
             }
+
+            lastDriveVec = driveVector;
+            lastTranslationalVec = translationalVector;
+            lastCentripetalVec = centripetalForceVector;
             return returnWheelSpeeds(finalVector.x, finalVector.y, translationalVector.getHeading(), currentRobotPose.theta);
         }
     }
@@ -144,6 +154,7 @@ public class Follower {
 
     private Vec2d getDriveVector(Pose2d currentRobotPose, Pose2d projectedPoseOnCurve) {
         Vec2d nextWaypointVec = path.getNextWaypoint(currentRobotPose, lastRobotPose);
+        nextWaypoint = nextWaypointVec;
 
         if (nextWaypointVec != null) {
             //projected pose is where the robot is currently supposed to be
