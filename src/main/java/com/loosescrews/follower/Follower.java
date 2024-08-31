@@ -3,27 +3,36 @@ package com.loosescrews.follower;
 import com.loosescrews.localization.Pose2d;
 import com.loosescrews.localization.Vec2d;
 import com.loosescrews.path.Path;
+import com.loosescrews.path.PathSequence;
 import com.loosescrews.util.Angle;
 import com.loosescrews.util.NanoClock;
 import com.loosescrews.util.PIDFController;
 
 public class Follower {
+    //Debugging
     public Pose2d lastUpdateVels = new Pose2d();
     public Vec2d lastDriveVec = new Vec2d();
     public Pose2d lastTranslationalVec = new Pose2d();
     public Vec2d lastCentripetalVec = new Vec2d();
     public Vec2d nextWaypoint = new Vec2d();
+
+    protected PathSequence pathSequence;
+    private int currentIndex = 0;
     protected Path path;
     protected Pose2d holdingPose = null;
     protected Pose2d lastRobotPose = null;
+    private boolean isBusy = false;
 
     private final PIDFController TRANSLATIONAL;
     private final PIDFController DRIVE;
     private final PIDFController HEADING;
 
+    //For centripetal force
     private final double mass;
     private final double scalingf;
     private final double maxVel;
+
+    //For path ending
     private final double timeout;
     private final NanoClock clock;
     private double endTime = -1;
@@ -47,27 +56,52 @@ public class Follower {
 
     public void followPath(Path path) {
         this.path = path;
+        this.pathSequence = null;
         this.holdingPose = null;
+        this.isBusy = true;
     }
     public void holdPose(Pose2d pose) {
         this.holdingPose = pose;
+        this.pathSequence = null;
         this.path = null;
+        this.isBusy = true;
+    }
+    public void followPathSequence(PathSequence sequence) {
+        this.pathSequence = sequence;
+        this.path = null;
+        this.holdingPose = null;
+        this.isBusy = true;
+        currentIndex = 0;
     }
 
     public WheelSpeeds update(Pose2d currentRobotPose, Pose2d currentRobotVelocity) {
-        if (path == null && holdingPose == null) return null;
-        if (path != null && holdingPose != null) holdingPose = null;
+        if (path == null && holdingPose == null && pathSequence == null) return null;
+        if ((path != null || pathSequence != null) && holdingPose != null) holdingPose = null;
+        if (path != null && pathSequence != null) path = null;
 
         //if we are holding a position
-        if (path == null && holdingPose != null) {
+        if (path == null && pathSequence == null && holdingPose != null) {
             Pose2d translationalVector = getTranslationalVector(currentRobotPose, holdingPose);
-
             return returnWheelSpeeds(translationalVector.x, translationalVector.y, translationalVector.getHeading(), currentRobotPose.theta);
         }
 
-        Pose2d projectedPose = path.getProjectedPose(currentRobotPose);
+        //if we are running a path/at the final segment of pathsequence
+        if (path != null) {
+            return getVector(path, currentRobotPose, currentRobotVelocity, true);
+        }
+        if (pathSequence != null) {
+            if (currentIndex == pathSequence.size()-1) {
+                return getVector(pathSequence.get(currentIndex), currentRobotPose, currentRobotVelocity, true);
+            }
+            return getVector(pathSequence.get(currentIndex), currentRobotPose, currentRobotVelocity, false);
+        }
+        return null;
+    }
+
+    public WheelSpeeds getVector(Path activePath, Pose2d currentRobotPose, Pose2d currentRobotVelocity, boolean finalPath) {
+        Pose2d projectedPose = activePath.getProjectedPose(currentRobotPose);
         Pose2d translationalVector = getTranslationalVector(currentRobotPose, projectedPose);
-        Vec2d centripetalForceVector = getCentripetalForceVector(currentRobotVelocity);
+        Vec2d centripetalForceVector = getCentripetalForceVector(activePath, currentRobotVelocity);
 
         Vec2d corrective;
 
@@ -78,21 +112,30 @@ public class Follower {
             corrective = centripetalForceVector.plus(translationalVector.vec());
         }
 
-        Vec2d driveVector = getDriveVector(currentRobotPose, projectedPose);
+        Vec2d driveVector = getDriveVector(activePath, currentRobotPose, projectedPose, finalPath);
 
         //adding timeout for path ending
-        if (driveVector == null) {
+        if (finalPath && driveVector == null) {
             if (endTime != -1) {
                 double dt = clock.seconds() - endTime;
                 if (dt >= timeout) {
+                    //RESET EVERY VARIABLE
                     path = null;
+                    pathSequence = null;
+                    currentIndex = 0;
+                    isBusy = false;
                     endTime = -1;
+                    return null;
                 }
             }
             else {
                 endTime = clock.seconds();
             }
             lastDriveVec = new Vec2d();
+            return returnWheelSpeeds(corrective.x, corrective.y, translationalVector.getHeading(), currentRobotPose.theta);
+        }
+        if (driveVector == null) {
+            currentIndex++;
             return returnWheelSpeeds(corrective.x, corrective.y, translationalVector.getHeading(), currentRobotPose.theta);
         }
 
@@ -138,8 +181,8 @@ public class Follower {
         return new Pose2d(translationalVector, Math.min(Math.max(-1, headingCorrection), 1));
     }
 
-    private Vec2d getCentripetalForceVector(Pose2d currentRobotVelocity) {
-        double curvature = path.projectedPointCurvature();
+    private Vec2d getCentripetalForceVector(Path activePath, Pose2d currentRobotVelocity) {
+        double curvature = activePath.projectedPointCurvature();
         if (Double.isNaN(curvature)) return new Vec2d();
         if (currentRobotVelocity == null) return new Vec2d();
         if (curvature == 0) return new Vec2d();
@@ -147,19 +190,19 @@ public class Follower {
         double centripetalMag = mass * scalingf * Math.pow(currentRobotVelocity.vec().norm()/maxVel, 2) * curvature;
 
         return new Vec2d(Math.abs(Math.min(Math.max(-1, centripetalMag), 1)),
-                (curvature > 0 ? path.projectedPointTangent().theta + Math.PI / 2 :
-                        path.projectedPointTangent().theta - Math.PI / 2));
+                (curvature > 0 ? activePath.projectedPointTangent().theta + Math.PI / 2 :
+                        activePath.projectedPointTangent().theta - Math.PI / 2));
     }
 
 
-    private Vec2d getDriveVector(Pose2d currentRobotPose, Pose2d projectedPoseOnCurve) {
-        Vec2d nextWaypointVec = path.getNextWaypoint(currentRobotPose, lastRobotPose);
+    private Vec2d getDriveVector(Path activePath, Pose2d currentRobotPose, Pose2d projectedPoseOnCurve, boolean finalPath) {
+        Vec2d nextWaypointVec = activePath.getNextWaypoint(currentRobotPose, lastRobotPose);
         nextWaypoint = nextWaypointVec;
 
         if (nextWaypointVec != null) {
             //projected pose is where the robot is currently supposed to be
             Vec2d drivePoseDelta = nextWaypointVec.minus(projectedPoseOnCurve.vec());
-            double driveVectorMagnitude = DRIVE.calculate(0, drivePoseDelta.mag);
+            double driveVectorMagnitude = finalPath ? DRIVE.calculate(0, drivePoseDelta.mag) : 0.9;
             Vec2d driveVector = new Vec2d(Math.min(Math.max(-1,driveVectorMagnitude), 1), drivePoseDelta.theta);
 
             lastRobotPose = currentRobotPose;
@@ -181,7 +224,7 @@ public class Follower {
     }
 
     public boolean isBusy() {
-        return path != null;
+        return isBusy;
     }
 
     public boolean isHoldingPose() {
@@ -192,7 +235,14 @@ public class Follower {
         return holdingPose;
     }
 
-    public Path getCurrentPath() {
+    public Path getActivePath() {
+        if (pathSequence != null) {
+            return pathSequence.get(currentIndex);
+        }
         return path;
+    }
+
+    public PathSequence getCurrentPathSequence() {
+        return pathSequence;
     }
 }

@@ -35,7 +35,7 @@ public class CubicBezier extends ParametricCurve {
 
         for (int i = 1; i < waypoints.size(); i++) {
             if (waypoints.get(i).getT() >= point.getT()) {
-                if (i >= 997) {
+                if (i >= 995) {
                     return null;
                 }
                 if (waypoints.get(i).getWaypointVec().distTo(pose.vec()) <=
