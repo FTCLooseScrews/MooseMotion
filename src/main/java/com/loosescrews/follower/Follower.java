@@ -186,10 +186,12 @@ public class Follower {
         if (Double.isNaN(curvature)) return new Vec2d();
         if (currentRobotVelocity == null) return new Vec2d();
         if (curvature == 0) return new Vec2d();
-
-        double centripetalMag = mass * scalingf * Math.pow(currentRobotVelocity.vec().norm()/maxVel, 2) * curvature;
-
-        return new Vec2d(Math.abs(Math.min(Math.max(-1, centripetalMag), 1)),
+    
+//        double centripetalMag = mass * scalingf * Math.pow(currentRobotVelocity.vec().norm()/maxVel, 2) * curvature;
+        double centripetalMovement = 0.001 * Math.sqrt(Math.pow((Math.pow(currentRobotVelocity.vec().norm(), 2)*curvature/2.0)*Math.cos(activePath.projectedPointNormal().theta), 2) + Math.pow((Math.pow(currentRobotVelocity.vec().norm(), 2)*curvature/2.0)*Math.sin(activePath.projectedPointNormal().theta), 2));
+        // Scaling factor is just to acount for weighting this vector with the translational one. Nothing to do with units or normalizing
+        // DIRECTION NEEDED
+        return new Vec2d(centripetalMovement*scalingf,
                 (curvature > 0 ? activePath.projectedPointTangent().theta + Math.PI / 2 :
                         activePath.projectedPointTangent().theta - Math.PI / 2));
     }
