@@ -15,6 +15,7 @@ public class Follower {
     public Pose2d lastTranslationalVec = new Pose2d();
     public Vec2d lastCentripetalVec = new Vec2d();
     public Vec2d nextWaypoint = new Vec2d();
+    public double lastLoopTime = -1;
 
     protected PathSequence pathSequence;
     private int currentIndex = 0;
@@ -125,6 +126,7 @@ public class Follower {
                     currentIndex = 0;
                     isBusy = false;
                     endTime = -1;
+                    lastLoopTime = -1;
                     return null;
                 }
             }
@@ -163,6 +165,7 @@ public class Follower {
     public WheelSpeeds returnWheelSpeeds(double xVel, double yVel, double thetaVel, double robotHeading) {
         Pose2d chassisSpeeds = Kinematics.fromFieldRelativeSpeeds(xVel, yVel, thetaVel, robotHeading);
         lastUpdateVels = new Pose2d(xVel, yVel, thetaVel);
+        lastLoopTime = clock.seconds();
         return Kinematics.robotSpeedsToWheelSpeeds(chassisSpeeds, 1.0, 1.0);
 
     }
@@ -173,12 +176,12 @@ public class Follower {
         Pose2d poseError = projectedPose.minus(currentRobotPose);
 
         double translationalVectorMagnitude = TRANSLATIONAL.calculate(0, poseError.vec().mag);
-        Vec2d translationalVector = new Vec2d(Math.min(Math.max(0,translationalVectorMagnitude), 1), poseError.vec().theta);
+        Vec2d translationalVector = new Vec2d(clamp(0, 1, translationalVectorMagnitude), poseError.vec().theta);
 
         double headingError = Angle.getRotationSide(currentRobotPose.theta, projectedPose.theta) * Angle.smallestDifference(currentRobotPose.theta, projectedPose.theta);
         double headingCorrection = HEADING.calculate(0, headingError);
 
-        return new Pose2d(translationalVector, Math.min(Math.max(-1, headingCorrection), 1));
+        return new Pose2d(translationalVector, clamp(-1, 1, headingCorrection));
     }
 
     private Vec2d getCentripetalForceVector(Path activePath, Pose2d currentRobotVelocity) {
@@ -188,10 +191,11 @@ public class Follower {
         if (curvature == 0) return new Vec2d();
     
 //        double centripetalMag = mass * scalingf * Math.pow(currentRobotVelocity.vec().norm()/maxVel, 2) * curvature;
-        double centripetalMovement = 0.001 * Math.pow(currentRobotVelocity.vec().norm(), 2)*curvature/2.0);
+        double deltaT = lastLoopTime == -1 ? 0 : clock.seconds() - lastLoopTime;
+        double centripetalMovement = deltaT * Math.pow(currentRobotVelocity.vec().norm(), 2)*curvature/2.0;
         //The scaling factor is just to account for weighting this vector with the translational one. Nothing to do with units or normalizing
         // DIRECTION NEEDED
-        return new Vec2d(centripetalMovement*scalingf,
+        return new Vec2d(clamp(0, 1, centripetalMovement * scalingf),
                 (curvature > 0 ? activePath.projectedPointTangent().theta + Math.PI / 2 :
                         activePath.projectedPointTangent().theta - Math.PI / 2));
     }
@@ -205,7 +209,7 @@ public class Follower {
             //projected pose is where the robot is currently supposed to be
             Vec2d drivePoseDelta = nextWaypointVec.minus(projectedPoseOnCurve.vec());
             double driveVectorMagnitude = finalPath ? DRIVE.calculate(0, drivePoseDelta.mag) : 0.9;
-            Vec2d driveVector = new Vec2d(Math.min(Math.max(-1,driveVectorMagnitude), 1), drivePoseDelta.theta);
+            Vec2d driveVector = new Vec2d(clamp(-1, 1, driveVectorMagnitude), drivePoseDelta.theta);
 
             lastRobotPose = currentRobotPose;
             return driveVector;
@@ -246,5 +250,8 @@ public class Follower {
 
     public PathSequence getCurrentPathSequence() {
         return pathSequence;
+    }
+    public static double clamp(double min, double max, double val) {
+        return Math.min(Math.max(min, val), max);
     }
 }
