@@ -2,6 +2,7 @@ package com.loosescrews.path;
 
 import com.loosescrews.localization.Pose2d;
 import com.loosescrews.localization.Vec2d;
+import com.loosescrews.path.exceptions.EmptyPathSequenceException;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -73,6 +74,7 @@ public class PathSequenceBuilder {
     }
 
     public PathSequenceBuilder bezierSplineTo(Vec2d... points) {
+        if (points.length == 0) throw new EmptyPathSequenceException();
         Bezier spline = new Bezier(addStartingPose(points));
         sequence.add(new Path(spline).setTangentHeadingInterpolation());
 
@@ -82,6 +84,7 @@ public class PathSequenceBuilder {
     }
 
     public PathSequenceBuilder bezierSplineToConstantHeading(double endHeading, Vec2d... points) {
+        if (points.length == 0) throw new EmptyPathSequenceException();
         Bezier spline = new Bezier(addStartingPose(points));
         sequence.add(new Path(spline).setConstantHeadingInterpolation(endHeading));
 
@@ -91,6 +94,7 @@ public class PathSequenceBuilder {
     }
 
     public PathSequenceBuilder bezierSplineToLinearHeading(double endHeading, Vec2d... points) {
+        if (points.length == 0) throw new EmptyPathSequenceException();
         Bezier spline = new Bezier(addStartingPose(points));
         sequence.add(new Path(spline).setLinearHeadingInterpolation(lastPose.theta, endHeading));
 
@@ -112,7 +116,7 @@ public class PathSequenceBuilder {
     private Vec2d[] addStartingPose(Vec2d[] controlPoints) {
         Vec2d[] ret = new Vec2d[controlPoints.length+1];
         ret[0] = lastPose.vec();
-        System.arraycopy(controlPoints, 1, ret, 1, ret.length - 1);
+        System.arraycopy(controlPoints, 0, ret, 1, controlPoints.length);
         return ret;
     }
 
