@@ -36,7 +36,6 @@ public class Bezier extends ParametricCurve {
     @Override
     public Vec2d getNextWaypoint(Pose2d pose, Pose2d last) {
         ProjectedPoint point = ProjectedPoint.projectFrom(this, pose);
-        Vec2d projectedPoint = point.getPoint();
 
         if (point.getT() == 0) return waypoints.get(0).getWaypointVec();
 
@@ -45,30 +44,15 @@ public class Bezier extends ParametricCurve {
                 if (i >= 995) {
                     return null;
                 }
+                if (waypoints.get(i).getWaypointVec().distTo(pose.vec()) <=
+                        waypoints.get(i-1).getWaypointVec().distTo(pose.vec())) {
+                    return waypoints.get(i == waypoints.size()-1 ? i : i+1).getWaypointVec();
+                }
                 return waypoints.get(i).getWaypointVec();
             }
         }
 
         return null;
-
-//        Vec2d projectedPoint = ProjectedPoint.projectFrom(this, pose).getPoint();
-//        Waypoint minimumDist = waypoints.get(0);
-//        int minI = 0;
-//        Waypoint secondMinimumDist = waypoints.get(1);
-//        int nMinI = 1;
-//
-//        for (int i = 2; i < waypoints.size(); i++) {
-//            if (waypoints.get(i).getWaypointVec().distTo(projectedPoint) < minimumDist.getWaypointVec().distTo(projectedPoint)) {
-//                minimumDist = waypoints.get(i);
-//                minI = i;
-//            }
-//            else if (waypoints.get(i).getWaypointVec().distTo(projectedPoint) < secondMinimumDist.getWaypointVec().distTo(projectedPoint)) {
-//                secondMinimumDist = waypoints.get(i);
-//                nMinI = i;
-//            }
-//        }
-//        if (minI == waypoints.size() - 1) return null;
-//        return minI > nMinI ? minimumDist.getWaypointVec() : secondMinimumDist.getWaypointVec();
     }
     public Vec2d get(double t) {
         return Vec2d.fromCartesian(x.get(t), y.get(t));
