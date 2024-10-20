@@ -32,7 +32,6 @@ public class Follower {
     //For centripetal force
     private final double mass;
     private final double scalingf;
-    private final double maxVel;
 
     //For path ending
     private final double forwardDeceleration;
@@ -42,14 +41,13 @@ public class Follower {
     private final NanoClock clock;
     private double endTime = -1;
 
-    public Follower(PIDFController T, PIDFController D, PIDFController H, double mass, double scalingf, double maxVel, double forwardDeceleration, double lateralDeceleration, double timeout) {
+    public Follower(PIDFController T, PIDFController D, PIDFController H, double mass, double scalingf, double forwardDeceleration, double lateralDeceleration, double timeout) {
         this.TRANSLATIONAL = T;
         this.DRIVE = D;
         this.HEADING = H;
 
         this.mass = mass;
         this.scalingf = scalingf;
-        this.maxVel = maxVel;
 
         this.forwardDeceleration = forwardDeceleration;
         this.lateralDeceleration = lateralDeceleration;
@@ -58,8 +56,8 @@ public class Follower {
         this.timeout = timeout;
     }
 
-    public Follower(PIDFController T, PIDFController D, PIDFController H, double mass, double scalingf, double forwardDeceleration, double lateralDeceleration, double maxVel) {
-        this(T, D, H, mass, scalingf, maxVel, forwardDeceleration, lateralDeceleration, 1.2);
+    public Follower(PIDFController T, PIDFController D, PIDFController H, double mass, double scalingf, double forwardDeceleration, double lateralDeceleration) {
+        this(T, D, H, mass, scalingf, forwardDeceleration, lateralDeceleration, 1.2);
     }
 
     public void followPath(Path path) {
