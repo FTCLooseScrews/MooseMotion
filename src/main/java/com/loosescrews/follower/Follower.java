@@ -216,7 +216,7 @@ public class Follower {
             //projected pose is where the robot is currently supposed to be
             Vec2d drivePoseDelta = nextWaypointVec.minus(projectedPoseOnCurve.vec());
 
-            double driveVectorMagnitude = 0.9;
+            double driveVectorMagnitude = finalPath ? DRIVE.calculate(0, drivePoseDelta.mag) : 0.9;
             Vec2d driveVector = new Vec2d(clamp(-1, 1, driveVectorMagnitude), drivePoseDelta.theta);
 
             if (nextWaypoint.getT() > 0.85 && currentRobotVel != null) {
