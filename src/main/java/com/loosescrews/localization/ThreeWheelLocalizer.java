@@ -82,7 +82,7 @@ public abstract class ThreeWheelLocalizer implements Localizer {
 
     public void setPoseEstimate(Pose2d estimate) {
         lastWheelPositions = new ArrayList<>();
-        poseVelocity = estimate;
+        poseEstimate = estimate;
     }
 
     @Override

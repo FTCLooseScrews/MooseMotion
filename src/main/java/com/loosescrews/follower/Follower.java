@@ -2,6 +2,7 @@ package com.loosescrews.follower;
 
 import com.loosescrews.localization.Pose2d;
 import com.loosescrews.localization.Vec2d;
+import com.loosescrews.path.ParametricCurve;
 import com.loosescrews.path.Path;
 import com.loosescrews.path.PathSequence;
 import com.loosescrews.util.Angle;
@@ -14,7 +15,7 @@ public class Follower {
     public Vec2d lastDriveVec = new Vec2d();
     public Pose2d lastTranslationalVec = new Pose2d();
     public Vec2d lastCentripetalVec = new Vec2d();
-    public Vec2d nextWaypoint = new Vec2d();
+    public ParametricCurve.Waypoint nextWaypoint = new ParametricCurve.Waypoint(new Vec2d(), 0);
     public double lastLoopTime = -1;
 
     protected PathSequence pathSequence;
@@ -34,11 +35,14 @@ public class Follower {
     private final double maxVel;
 
     //For path ending
+    private final double forwardDeceleration;
+    private final double lateralDeceleration;
+
     private final double timeout;
     private final NanoClock clock;
     private double endTime = -1;
 
-    public Follower(PIDFController T, PIDFController D, PIDFController H, double mass, double scalingf, double maxVel, double timeout) {
+    public Follower(PIDFController T, PIDFController D, PIDFController H, double mass, double scalingf, double maxVel, double forwardDeceleration, double lateralDeceleration, double timeout) {
         this.TRANSLATIONAL = T;
         this.DRIVE = D;
         this.HEADING = H;
@@ -47,12 +51,15 @@ public class Follower {
         this.scalingf = scalingf;
         this.maxVel = maxVel;
 
+        this.forwardDeceleration = forwardDeceleration;
+        this.lateralDeceleration = lateralDeceleration;
+
         this.clock = NanoClock.system();
         this.timeout = timeout;
     }
 
-    public Follower(PIDFController T, PIDFController D, PIDFController H, double mass, double scalingf, double maxVel) {
-        this(T, D, H, mass, scalingf, maxVel,1.2);
+    public Follower(PIDFController T, PIDFController D, PIDFController H, double mass, double scalingf, double forwardDeceleration, double lateralDeceleration, double maxVel) {
+        this(T, D, H, mass, scalingf, maxVel, forwardDeceleration, lateralDeceleration, 1.2);
     }
 
     public void followPath(Path path) {
@@ -113,7 +120,7 @@ public class Follower {
             corrective = centripetalForceVector.plus(translationalVector.vec());
         }
 
-        Vec2d driveVector = getDriveVector(activePath, currentRobotPose, projectedPose, finalPath);
+        Vec2d driveVector = getDriveVector(activePath, currentRobotPose, projectedPose, currentRobotVelocity, finalPath);
 
         //adding timeout for path ending
         if (finalPath && driveVector == null) {
@@ -201,15 +208,30 @@ public class Follower {
     }
 
 
-    private Vec2d getDriveVector(Path activePath, Pose2d currentRobotPose, Pose2d projectedPoseOnCurve, boolean finalPath) {
-        Vec2d nextWaypointVec = activePath.getNextWaypoint(currentRobotPose, lastRobotPose);
-        nextWaypoint = nextWaypointVec;
+    private Vec2d getDriveVector(Path activePath, Pose2d currentRobotPose, Pose2d projectedPoseOnCurve, Pose2d currentRobotVel, boolean finalPath) {
+        nextWaypoint = activePath.getNextWaypoint(currentRobotPose, lastRobotPose);
+        Vec2d nextWaypointVec = nextWaypoint.getWaypointVec();
 
         if (nextWaypointVec != null) {
             //projected pose is where the robot is currently supposed to be
             Vec2d drivePoseDelta = nextWaypointVec.minus(projectedPoseOnCurve.vec());
-            double driveVectorMagnitude = finalPath ? DRIVE.calculate(0, drivePoseDelta.mag) : 0.9;
+
+            double driveVectorMagnitude = 0.9;
             Vec2d driveVector = new Vec2d(clamp(-1, 1, driveVectorMagnitude), drivePoseDelta.theta);
+
+            if (nextWaypoint.getT() > 0.85 && currentRobotVel != null) {
+                double xDist = sign(activePath.end().vec().minus(projectedPoseOnCurve.vec()).x) * Math.sqrt(-currentRobotVel.x*currentRobotVel.x / (2 * forwardDeceleration));
+                double yDist = sign(activePath.end().vec().minus(projectedPoseOnCurve.vec()).y) * Math.sqrt(-currentRobotVel.y * currentRobotVel.y / (2 * lateralDeceleration));
+
+                Vec2d zeroPowerVec = Vec2d.fromCartesian(xDist,yDist).plus(currentRobotPose.vec());
+                if (zeroPowerVec.distTo(projectedPoseOnCurve.vec()) > activePath.end().vec().distTo(projectedPoseOnCurve.vec())) {
+                    Vec2d zeroPowerGoalCorrection = activePath.end().vec().minus(zeroPowerVec);
+                    double correctionMag = DRIVE.calculate(0, zeroPowerGoalCorrection.mag/1000);
+                    Vec2d correctionVec = new Vec2d(clamp(-1, 1, correctionMag), zeroPowerGoalCorrection.theta);
+
+                    driveVector = driveVector.plus(correctionVec);
+                }
+            }
 
             lastRobotPose = currentRobotPose;
             return driveVector;
@@ -217,6 +239,11 @@ public class Follower {
 
         return null;
     }
+
+    public double sign(double num) {
+        return num > 0 ? 1 : num < 0 ? -1 : 0;
+    }
+
     public double scale (Vec2d base, Vec2d scaling) {
         double x = base.x;
         double y = base.y;

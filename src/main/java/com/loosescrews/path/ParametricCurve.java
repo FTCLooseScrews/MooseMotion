@@ -20,7 +20,10 @@ public abstract class ParametricCurve {
 
     public abstract Vec2d get(double t);
 
-    public abstract Vec2d getNextWaypoint(Pose2d pose, Pose2d last);
+    public abstract Waypoint getNextWaypoint(Pose2d pose, Pose2d last);
+
+    public abstract double length();
+    public abstract double lengthFromWaypoint(int wpIndex);
 
     public List<Waypoint> getWaypoints() {
         return waypoints;

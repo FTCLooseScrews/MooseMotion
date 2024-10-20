@@ -34,10 +34,10 @@ public class Bezier extends ParametricCurve {
     }
 
     @Override
-    public Vec2d getNextWaypoint(Pose2d pose, Pose2d last) {
+    public Waypoint getNextWaypoint(Pose2d pose, Pose2d last) {
         ProjectedPoint point = ProjectedPoint.projectFrom(this, pose);
 
-        if (point.getT() == 0) return waypoints.get(0).getWaypointVec();
+        if (point.getT() == 0) return waypoints.get(0);
 
         for (int i = 0; i < waypoints.size(); i++) {
             if (waypoints.get(i).getT() >= point.getT()) {
@@ -46,9 +46,9 @@ public class Bezier extends ParametricCurve {
                 }
                 if (waypoints.get(i).getWaypointVec().distTo(pose.vec()) <=
                         waypoints.get(i-1).getWaypointVec().distTo(pose.vec())) {
-                    return waypoints.get(i == waypoints.size()-1 ? i : i+1).getWaypointVec();
+                    return waypoints.get(i == waypoints.size()-1 ? i : i+1);
                 }
-                return waypoints.get(i).getWaypointVec();
+                return waypoints.get(i);
             }
         }
 
@@ -80,6 +80,20 @@ public class Bezier extends ParametricCurve {
 
         if (deriv.norm() == 0) return 0;
         return (deriv.x*secondDeriv.y-deriv.y-secondDeriv.x)/Math.pow(deriv.norm(), 3);
+    }
+
+    public double length() {
+        return lengthFromWaypoint(0);
+    }
+
+    public double lengthFromWaypoint(int wpIndex) {
+        if (wpIndex == waypoints.size() || wpIndex == waypoints.size()-1) return 0;
+
+        double sum = 0;
+        for (int i = wpIndex+1; i < waypoints.size(); i++) {
+            sum += waypoints.get(i).getWaypointVec().distTo(waypoints.get(i-1).getWaypointVec());
+        }
+        return sum;
     }
 
     private static class BezierCurve {

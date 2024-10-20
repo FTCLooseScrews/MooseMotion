@@ -42,15 +42,25 @@ public class Line extends ParametricCurve {
     }
 
     @Override
-    public Vec2d getNextWaypoint(Pose2d pose, Pose2d last) {
+    public Waypoint getNextWaypoint(Pose2d pose, Pose2d last) {
         if (last == null) {
-            return waypoints.get(0).getWaypointVec();
+            return waypoints.get(0);
         }
         for (Waypoint waypoint : waypoints) {
             if (waypoint.getWaypointVec().distTo(Vec2d.fromCartesian(x1, y1)) > pose.vec().distTo(Vec2d.fromCartesian(x1, y1))) {
-                return waypoint.getWaypointVec();
+                return waypoint;
             }
         }
         return null;
+    }
+
+    @Override
+    public double length() {
+        return Vec2d.fromCartesian(x2-x1, y2-y1).norm();
+    }
+
+    public double lengthFromWaypoint(int wpIndex) {
+        Vec2d waypoint = waypoints.get(wpIndex).getWaypointVec();
+        return Vec2d.fromCartesian(x2 - waypoint.x, y2 - waypoint.y).norm();
     }
 }

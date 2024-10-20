@@ -16,7 +16,7 @@ public class Path {
         this.curve = curve;
     }
 
-    public Vec2d getNextWaypoint(Pose2d currentPose, Pose2d lastPose) {
+    public ParametricCurve.Waypoint getNextWaypoint(Pose2d currentPose, Pose2d lastPose) {
         return curve.getNextWaypoint(currentPose, lastPose);
     }
 
