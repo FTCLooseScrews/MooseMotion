@@ -229,7 +229,9 @@ public class Follower {
                     double correctionMag = DRIVE.calculate(0, zeroPowerGoalCorrection.mag/1000);
                     Vec2d correctionVec = new Vec2d(clamp(-1, 1, correctionMag), zeroPowerGoalCorrection.theta);
 
-                    driveVector = driveVector.plus(correctionVec);
+                    //this shouldn't happen but just in case
+                    driveVector = driveVector.plus(correctionVec).mag > 1 ?
+                            driveVector.plus(correctionVec.mul(scale(driveVector, correctionVec))) : driveVector.plus(correctionVec);
                 }
             }
 
