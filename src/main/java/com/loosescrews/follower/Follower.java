@@ -217,7 +217,7 @@ public class Follower {
             double driveVectorMagnitude = finalPath ? DRIVE.calculate(0, drivePoseDelta.mag) : 0.9;
             Vec2d driveVector = new Vec2d(clamp(-1, 1, driveVectorMagnitude), drivePoseDelta.theta);
 
-            if (nextWaypoint.getT() > 0.85 && currentRobotVel != null) {
+            if (finalPath && nextWaypoint.getT() > 0.85 && currentRobotVel != null) {
                 double xDist = sign(activePath.end().vec().minus(projectedPoseOnCurve.vec()).x) * Math.sqrt(-currentRobotVel.x*currentRobotVel.x / (2 * forwardDeceleration));
                 double yDist = sign(activePath.end().vec().minus(projectedPoseOnCurve.vec()).y) * Math.sqrt(-currentRobotVel.y * currentRobotVel.y / (2 * lateralDeceleration));
 
