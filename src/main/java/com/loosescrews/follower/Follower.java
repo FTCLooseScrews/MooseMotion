@@ -218,21 +218,21 @@ public class Follower {
             double driveVectorMagnitude = finalPath ? DRIVE.calculate(0, drivePoseDelta.mag) : 0.9;
             Vec2d driveVector = new Vec2d(clamp(-1, 1, driveVectorMagnitude), drivePoseDelta.theta);
 
-            if (finalPath && nextWaypoint.getT() > 0.85 && currentRobotVel != null) {
-                double xDist = sign(activePath.end().vec().minus(projectedPoseOnCurve.vec()).x) * Math.sqrt(-currentRobotVel.x*currentRobotVel.x / (2 * forwardDeceleration));
-                double yDist = sign(activePath.end().vec().minus(projectedPoseOnCurve.vec()).y) * Math.sqrt(-currentRobotVel.y * currentRobotVel.y / (2 * lateralDeceleration));
-
-                Vec2d zeroPowerVec = Vec2d.fromCartesian(xDist,yDist).plus(currentRobotPose.vec());
-                if (zeroPowerVec.distTo(projectedPoseOnCurve.vec()) > activePath.end().vec().distTo(projectedPoseOnCurve.vec())) {
-                    Vec2d zeroPowerGoalCorrection = activePath.end().vec().minus(zeroPowerVec);
-                    double correctionMag = DRIVE.calculate(0, zeroPowerGoalCorrection.mag/1000);
-                    Vec2d correctionVec = new Vec2d(clamp(-1, 1, correctionMag), zeroPowerGoalCorrection.theta);
-
-                    //this shouldn't happen but just in case
-                    driveVector = driveVector.plus(correctionVec).mag > 1 ?
-                            driveVector.plus(correctionVec.mul(scale(driveVector, correctionVec))) : driveVector.plus(correctionVec);
-                }
-            }
+//            if (finalPath && nextWaypoint.getT() > 0.85 && currentRobotVel != null) {
+//                double xDist = sign(activePath.end().vec().minus(projectedPoseOnCurve.vec()).x) * Math.sqrt(-currentRobotVel.x*currentRobotVel.x / (2 * forwardDeceleration));
+//                double yDist = sign(activePath.end().vec().minus(projectedPoseOnCurve.vec()).y) * Math.sqrt(-currentRobotVel.y * currentRobotVel.y / (2 * lateralDeceleration));
+//
+//                Vec2d zeroPowerVec = Vec2d.fromCartesian(xDist,yDist).plus(currentRobotPose.vec());
+//                if (zeroPowerVec.distTo(projectedPoseOnCurve.vec()) > activePath.end().vec().distTo(projectedPoseOnCurve.vec())) {
+//                    Vec2d zeroPowerGoalCorrection = activePath.end().vec().minus(zeroPowerVec);
+//                    double correctionMag = DRIVE.calculate(0, zeroPowerGoalCorrection.mag/1000);
+//                    Vec2d correctionVec = new Vec2d(clamp(-1, 1, correctionMag), zeroPowerGoalCorrection.theta);
+//
+//                    //this shouldn't happen but just in case
+//                    driveVector = driveVector.plus(correctionVec).mag > 1 ?
+//                            driveVector.plus(correctionVec.mul(scale(driveVector, correctionVec))) : driveVector.plus(correctionVec);
+//                }
+//            }
 
             lastRobotPose = currentRobotPose;
             return driveVector;
