@@ -4,14 +4,14 @@ import com.loosescrews.localization.Pose2d;
 import com.loosescrews.localization.Vec2d;
 
 public class CubicBezier extends ParametricCurve {
-    private Vec2d first, second, third, fourth;
-    private CubicBezierCurve x;
-    private CubicBezierCurve y;
+    private final Vec2d fourth;
+    private final CubicBezierCurve x;
+    private final CubicBezierCurve y;
 
     public CubicBezier(Vec2d first, Vec2d second, Vec2d third, Vec2d fourth) {
-        this.first = first;
-        this.second = second;
-        this.third = third;
+//        this.first = first;
+//        this.second = second;
+//        this.third = third;
         this.fourth = fourth;
 
         x = new CubicBezierCurve(first.x, second.x, third.x, fourth.x);
