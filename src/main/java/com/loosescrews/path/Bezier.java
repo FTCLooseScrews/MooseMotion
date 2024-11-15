@@ -39,7 +39,7 @@ public class Bezier extends ParametricCurve {
 
         if (point.getT() == 0) return waypoints.get(0);
 
-        for (int i = 0; i < waypoints.size(); i++) {
+        for (int i = 1; i < waypoints.size(); i++) {
             if (waypoints.get(i).getT() >= point.getT()) {
                 if (i >= 995) {
                     return null;
