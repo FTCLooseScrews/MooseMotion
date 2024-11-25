@@ -225,10 +225,6 @@ public class Follower {
         return null;
     }
 
-    public double sign(double num) {
-        return num > 0 ? 1 : num < 0 ? -1 : 0;
-    }
-
     public double scale (Vec2d base, Vec2d scaling) {
         double x = base.x;
         double y = base.y;
