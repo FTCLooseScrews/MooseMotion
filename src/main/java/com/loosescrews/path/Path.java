@@ -7,13 +7,18 @@ import com.loosescrews.util.Angle;
 public class Path {
     private ParametricCurve curve;
     private ProjectedPoint projectedPoint;
+    private double speedConstraint;
 
     private double startHeading;
     private double endHeading;
     private boolean isTangentHeadingInterpolation = true;
 
-    public Path(ParametricCurve curve) {
+    public Path(ParametricCurve curve, double speedConstraint) {
         this.curve = curve;
+        this.speedConstraint = speedConstraint;
+    }
+    public Path(ParametricCurve curve) {
+        this(curve, 0.9);
     }
 
     public ParametricCurve.Waypoint getNextWaypoint(Pose2d currentPose, Pose2d lastPose) {
@@ -58,6 +63,11 @@ public class Path {
         return this;
     }
 
+    public Path setSpeedConstraint(double speed) {
+        speedConstraint = speed;
+        return this;
+    }
+
     public double projectedPointHeading() {
         if (isTangentHeadingInterpolation) {
             return projectedPoint.getTangent().getAngle();
@@ -79,5 +89,9 @@ public class Path {
 
     public ParametricCurve getCurve() {
         return curve;
+    }
+
+    public double getSpeedConstraint() {
+        return speedConstraint;
     }
 }
