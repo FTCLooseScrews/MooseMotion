@@ -222,6 +222,35 @@ public class Follower {
             return driveVector;
         }
 
+        
+
+        return null;
+    }
+
+    private Vec2d getDriveVector(Path activePath, Pose2d currentRobotPose, Pose2d projectedPoseOnCurve, Pose2d currentRobotVel, boolean finalPath, double slidePos) {
+        nextWaypoint = activePath.getNextWaypoint(currentRobotPose, lastRobotPose);
+
+        if (nextWaypoint != null) {
+            Vec2d nextWaypointVec = nextWaypoint.getWaypointVec();
+
+            //projected pose is where the robot is currently supposed to be
+            Vec2d drivePoseDelta = nextWaypointVec.minus(projectedPoseOnCurve.vec());
+
+            double driveVectorMagnitude = finalPath ? DRIVE.calculate(0, drivePoseDelta.mag) : activePath.getSpeedConstraint();
+
+            double adjustedPow;
+            if (slidePos < 1000){
+                adjustedPow = 1;
+            } else {
+                adjustedPow = (0.1-1)/2750 * (slidePos-1000) + 1;
+            }
+            
+            Vec2d driveVector = new Vec2d(clamp(-1, 1, driveVectorMagnitude * adjustedPow), drivePoseDelta.theta);
+
+            lastRobotPose = currentRobotPose;
+            return driveVector;
+        }
+
         return null;
     }
 
