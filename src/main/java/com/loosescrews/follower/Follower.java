@@ -17,6 +17,7 @@ public class Follower {
     public Vec2d lastCentripetalVec = new Vec2d();
     public ParametricCurve.Waypoint nextWaypoint = new ParametricCurve.Waypoint(new Vec2d(), 0);
     public double lastLoopTime = -1;
+    public double activePathLength = -999;
 
     protected PathSequence pathSequence;
     private int currentIndex = 0;
@@ -65,18 +66,21 @@ public class Follower {
         this.pathSequence = null;
         this.holdingPose = null;
         this.isBusy = true;
+        activePathLength = -999;
     }
     public void holdPose(Pose2d pose) {
         this.holdingPose = pose;
         this.pathSequence = null;
         this.path = null;
         this.isBusy = true;
+        activePathLength = -999;
     }
     public void followPathSequence(PathSequence sequence) {
         this.pathSequence = sequence;
         this.path = null;
         this.holdingPose = null;
         this.isBusy = true;
+        activePathLength = -999;
         currentIndex = 0;
     }
 
@@ -132,6 +136,7 @@ public class Follower {
                     isBusy = false;
                     endTime = -1;
                     lastLoopTime = -1;
+                    activePathLength = -999;
                     return null;
                 }
             }
@@ -143,6 +148,7 @@ public class Follower {
         }
         if (driveVector == null) {
             currentIndex++;
+            activePathLength = -999;
             return returnWheelSpeeds(corrective.x, corrective.y, translationalVector.getHeading(), currentRobotPose.theta);
         }
 
@@ -209,13 +215,19 @@ public class Follower {
     private Vec2d getDriveVector(Path activePath, Pose2d currentRobotPose, Pose2d projectedPoseOnCurve, Pose2d currentRobotVel, boolean finalPath) {
         nextWaypoint = activePath.getNextWaypoint(currentRobotPose, lastRobotPose);
 
+        if (activePathLength < 0) {
+            activePathLength = activePath.getCurve().length();
+        }
+
         if (nextWaypoint != null) {
             Vec2d nextWaypointVec = nextWaypoint.getWaypointVec();
 
             //projected pose is where the robot is currently supposed to be
             Vec2d drivePoseDelta = nextWaypointVec.minus(projectedPoseOnCurve.vec());
 
-            double driveVectorMagnitude = finalPath ? DRIVE.calculate(0, drivePoseDelta.mag) : activePath.getSpeedConstraint();
+            double driveVectorMagnitude = finalPath ?
+                    DRIVE.calculate(0, (drivePoseDelta.mag) / (activePathLength/activePath.getCurve().getWaypoints().size()))
+                    : activePath.getSpeedConstraint();
             Vec2d driveVector = new Vec2d(clamp(-1, 1, driveVectorMagnitude), drivePoseDelta.theta);
 
             lastRobotPose = currentRobotPose;
