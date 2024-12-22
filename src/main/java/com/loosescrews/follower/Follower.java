@@ -108,6 +108,30 @@ public class Follower {
         return null;
     }
 
+    public WheelSpeeds update(Pose2d currentRobotPose, Pose2d currentRobotVelocity, double slidePos) {
+        if (path == null && holdingPose == null && pathSequence == null) return null;
+        if ((path != null || pathSequence != null) && holdingPose != null) holdingPose = null;
+        if (path != null && pathSequence != null) path = null;
+
+        //if we are holding a position
+        if (path == null && pathSequence == null && holdingPose != null) {
+            Pose2d translationalVector = getTranslationalVector(currentRobotPose, holdingPose);
+            return returnWheelSpeeds(translationalVector.x, translationalVector.y, translationalVector.getHeading(), currentRobotPose.theta);
+        }
+
+        //if we are running a path/at the final segment of pathsequence
+        if (path != null) {
+            return getVector(path, currentRobotPose, currentRobotVelocity, true, slidePos);
+        }
+        if (pathSequence != null) {
+            if (currentIndex == pathSequence.size()-1) {
+                return getVector(pathSequence.get(currentIndex), currentRobotPose, currentRobotVelocity, true, slidePos);
+            }
+            return getVector(pathSequence.get(currentIndex), currentRobotPose, currentRobotVelocity, false, slidePos);
+        }
+        return null;
+    }
+
     public WheelSpeeds getVector(Path activePath, Pose2d currentRobotPose, Pose2d currentRobotVelocity, boolean finalPath) {
         Pose2d projectedPose = activePath.getProjectedPose(currentRobotPose);
         Pose2d translationalVector = getTranslationalVector(currentRobotPose, projectedPose);
@@ -149,6 +173,69 @@ public class Follower {
         if (driveVector == null) {
             currentIndex++;
             activePathLength = -999;
+            return returnWheelSpeeds(corrective.x, corrective.y, translationalVector.getHeading(), currentRobotPose.theta);
+        }
+
+        if (corrective.mag == 1) {
+            lastTranslationalVec = translationalVector;
+            lastCentripetalVec = centripetalForceVector;
+            return returnWheelSpeeds(corrective.x, corrective.y, translationalVector.getHeading(), currentRobotPose.theta);
+        }
+        else {
+            Vec2d finalVector;
+            if (corrective.plus(driveVector).mag > 1) {
+                finalVector = corrective.plus(driveVector.mul(scale(corrective, driveVector)));
+            }
+            else {
+                finalVector = corrective.plus(driveVector);
+            }
+
+            lastDriveVec = driveVector;
+            lastTranslationalVec = translationalVector;
+            lastCentripetalVec = centripetalForceVector;
+            return returnWheelSpeeds(finalVector.x, finalVector.y, translationalVector.getHeading(), currentRobotPose.theta);
+        }
+    }
+
+    public WheelSpeeds getVector(Path activePath, Pose2d currentRobotPose, Pose2d currentRobotVelocity, boolean finalPath, double slidePos) {
+        Pose2d projectedPose = activePath.getProjectedPose(currentRobotPose);
+        Pose2d translationalVector = getTranslationalVector(currentRobotPose, projectedPose);
+        Vec2d centripetalForceVector = getCentripetalForceVector(activePath, currentRobotVelocity);
+
+        Vec2d corrective;
+
+        if (centripetalForceVector.plus(translationalVector.vec()).mag > 1) {
+            corrective = centripetalForceVector.plus(translationalVector.vec().mul(scale(centripetalForceVector, translationalVector.vec())));
+        }
+        else {
+            corrective = centripetalForceVector.plus(translationalVector.vec());
+        }
+
+        Vec2d driveVector = getDriveVector(activePath, currentRobotPose, projectedPose, currentRobotVelocity, finalPath, slidePos);
+
+        //adding timeout for path ending
+        if (finalPath && driveVector == null) {
+            if (endTime != -1) {
+                double dt = clock.seconds() - endTime;
+                if (dt >= timeout) {
+                    //RESET EVERY VARIABLE
+                    path = null;
+                    pathSequence = null;
+                    currentIndex = 0;
+                    isBusy = false;
+                    endTime = -1;
+                    lastLoopTime = -1;
+                    return null;
+                }
+            }
+            else {
+                endTime = clock.seconds();
+            }
+            lastDriveVec = new Vec2d();
+            return returnWheelSpeeds(corrective.x, corrective.y, translationalVector.getHeading(), currentRobotPose.theta);
+        }
+        if (driveVector == null) {
+            currentIndex++;
             return returnWheelSpeeds(corrective.x, corrective.y, translationalVector.getHeading(), currentRobotPose.theta);
         }
 
@@ -229,6 +316,35 @@ public class Follower {
                     DRIVE.calculate(0, (drivePoseDelta.mag) / (activePathLength/activePath.getCurve().getWaypoints().size()))
                     : activePath.getSpeedConstraint();
             Vec2d driveVector = new Vec2d(clamp(-1, 1, driveVectorMagnitude), drivePoseDelta.theta);
+
+            lastRobotPose = currentRobotPose;
+            return driveVector;
+        }
+
+        
+
+        return null;
+    }
+
+    private Vec2d getDriveVector(Path activePath, Pose2d currentRobotPose, Pose2d projectedPoseOnCurve, Pose2d currentRobotVel, boolean finalPath, double slidePos) {
+        nextWaypoint = activePath.getNextWaypoint(currentRobotPose, lastRobotPose);
+
+        if (nextWaypoint != null) {
+            Vec2d nextWaypointVec = nextWaypoint.getWaypointVec();
+
+            //projected pose is where the robot is currently supposed to be
+            Vec2d drivePoseDelta = nextWaypointVec.minus(projectedPoseOnCurve.vec());
+
+            double driveVectorMagnitude = finalPath ? DRIVE.calculate(0, drivePoseDelta.mag) : activePath.getSpeedConstraint();
+
+            double adjustedPow;
+            if (slidePos < 1000){
+                adjustedPow = 1;
+            } else {
+                adjustedPow = (0.1-1)/2750 * (slidePos-1000) + 1;
+            }
+            
+            Vec2d driveVector = new Vec2d(clamp(-1, 1, driveVectorMagnitude * adjustedPow), drivePoseDelta.theta);
 
             lastRobotPose = currentRobotPose;
             return driveVector;
