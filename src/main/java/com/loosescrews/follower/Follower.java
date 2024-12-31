@@ -313,7 +313,7 @@ public class Follower {
             Vec2d drivePoseDelta = nextWaypointVec.minus(projectedPoseOnCurve.vec());
 
             double driveVectorMagnitude = finalPath ?
-                    DRIVE.calculate(0, (drivePoseDelta.mag) / (activePathLength/activePath.getCurve().getWaypoints().size()))
+                    DRIVE.calculate(0, (drivePoseDelta.mag) / ((activePathLength)/activePath.getCurve().getWaypoints().size()))
                     : activePath.getSpeedConstraint();
             Vec2d driveVector = new Vec2d(clamp(-1, 1, driveVectorMagnitude), drivePoseDelta.theta);
 
