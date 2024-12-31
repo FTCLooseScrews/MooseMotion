@@ -325,10 +325,7 @@ public class Follower {
                 if (zeroPowerVec.distTo(projectedPoseOnCurve.vec()) > activePath.end().vec().distTo(projectedPoseOnCurve.vec())) {
                     Vec2d zeroPowerGoalCorrection = activePath.end().vec().minus(zeroPowerVec);
                     double correctionMag = DRIVE.calculate(0, zeroPowerGoalCorrection.mag/activePath.end().vec().distTo(projectedPoseOnCurve.vec()));
-                    Vec2d correctionVec = new Vec2d(clamp(-1, 1, correctionMag), zeroPowerGoalCorrection.theta);
-
-                    //this shouldn't happen but just in case
-                    driveVector = correctionVec;
+                    driveVector = new Vec2d(clamp(-1, 1, correctionMag), zeroPowerGoalCorrection.theta);
                 }
             }
 
