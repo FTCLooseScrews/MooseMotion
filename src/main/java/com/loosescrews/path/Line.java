@@ -17,9 +17,9 @@ public class Line extends ParametricCurve {
             waypoints.add(new Waypoint(x1 + line.x * i/1000.0, y1 + line.y * i/1000.0, i/1000.0));
         }
 
-        for (int i = 0; i < 50; i++) {
-            waypoints.remove(0);
-        }
+//        for (int i = 0; i < 50; i++) {
+//            waypoints.remove(0);
+//        }
     }
 
     @Override

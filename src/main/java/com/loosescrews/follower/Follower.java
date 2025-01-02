@@ -15,6 +15,7 @@ public class Follower {
     public Vec2d lastDriveVec = new Vec2d();
     public Pose2d lastTranslationalVec = new Pose2d();
     public Vec2d lastCentripetalVec = new Vec2d();
+    public Pose2d lastProjectedPose = new Pose2d();
     public ParametricCurve.Waypoint nextWaypoint = new ParametricCurve.Waypoint(new Vec2d(), 0);
     public double lastLoopTime = -1;
     public double activePathLength = -999;
@@ -301,6 +302,7 @@ public class Follower {
 
     private Vec2d getDriveVector(Path activePath, Pose2d currentRobotPose, Pose2d projectedPoseOnCurve, Pose2d currentRobotVel, boolean finalPath) {
         nextWaypoint = activePath.getNextWaypoint(currentRobotPose, lastRobotPose);
+        lastProjectedPose = projectedPoseOnCurve;
 
         if (activePathLength < 0) {
             activePathLength = activePath.getCurve().length();
