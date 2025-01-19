@@ -133,10 +133,13 @@ public class Follower {
                     path = null;
                     pathSequence = null;
                     currentIndex = 0;
-                    isBusy = false;
                     endTime = -1;
                     lastLoopTime = -1;
                     activePathLength = -999;
+                    if (activePath.isHoldingEnd()) {
+                        holdPose(activePath.end());
+                    }
+                    isBusy = false;
                     return new WheelSpeeds(0, 0, 0, 0);
                 }
             }

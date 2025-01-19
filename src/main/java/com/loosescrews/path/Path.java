@@ -12,11 +12,24 @@ public class Path {
     private double startHeading;
     private double endHeading;
     private boolean isTangentHeadingInterpolation = true;
+    private boolean holdEnd = false;
 
     public Path(ParametricCurve curve, double speedConstraint) {
         this.curve = curve;
         this.speedConstraint = speedConstraint;
     }
+
+    public Path(ParametricCurve curve, double speedConstraint, boolean holdEnd) {
+        this(curve, speedConstraint);
+        this.holdEnd = holdEnd;
+    }
+
+    public Path(ParametricCurve curve, boolean holdEnd) {
+        this(curve);
+        this.holdEnd = holdEnd;
+    }
+
+
     public Path(ParametricCurve curve) {
         this(curve, 0.9);
     }
@@ -93,5 +106,13 @@ public class Path {
 
     public double getSpeedConstraint() {
         return speedConstraint;
+    }
+
+    public boolean isHoldingEnd() {
+        return holdEnd;
+    }
+
+    public void setHoldingEnd(boolean holdingEnd) {
+        this.holdEnd = holdingEnd;
     }
 }

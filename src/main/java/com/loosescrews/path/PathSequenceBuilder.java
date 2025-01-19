@@ -5,11 +5,10 @@ import com.loosescrews.localization.Vec2d;
 import com.loosescrews.path.exceptions.EmptyPathSequenceException;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 public class PathSequenceBuilder {
     private ArrayList<Path> sequence;
+    private boolean holdLast = false;
     private Pose2d lastPose;
 
     public PathSequenceBuilder(Pose2d startPose) {
@@ -141,6 +140,11 @@ public class PathSequenceBuilder {
         return this;
     }
 
+    public PathSequenceBuilder holdLast(boolean holding) {
+        this.holdLast = holding;
+        return this;
+    }
+
 
     // Do not use if this is not the first method in your path sequence.
     public PathSequenceBuilder addPath(Path path) {
@@ -159,6 +163,10 @@ public class PathSequenceBuilder {
     }
 
     public PathSequence build() {
+        Path end = sequence.get(sequence.size()-1);
+        end.setHoldingEnd(holdLast);
+        sequence.set(sequence.size()-1, end);
+
         return new PathSequence(sequence);
     }
 }
