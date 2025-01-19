@@ -16,6 +16,8 @@ public class Follower {
     public Pose2d lastTranslationalVec = new Pose2d();
     public Vec2d lastCentripetalVec = new Vec2d();
     public Pose2d lastProjectedPose = new Pose2d();
+    public Vec2d lastVelStoppingCorrectedVec = new Vec2d();
+    public double lastVelStoppingCorrectedMag = -1;
     public ParametricCurve.Waypoint nextWaypoint = new ParametricCurve.Waypoint(new Vec2d(), 0);
     public double lastLoopTime = -1;
     public double activePathLength = -999;
@@ -42,6 +44,7 @@ public class Follower {
     private final double timeout;
     private final NanoClock clock;
     private double endTime = -1;
+    private double toggleVelocityBasedStopping = 0.7;
 
     public Follower(PIDFController T, PIDFController D, PIDFController H, double mass, double scalingf, double forwardDeceleration, double lateralDeceleration, double timeout) {
         this.TRANSLATIONAL = T;
@@ -243,7 +246,7 @@ public class Follower {
             double driveVectorMagnitude = activePath.getSpeedConstraint();
             Vec2d driveVector = new Vec2d(clamp(-1, 1, driveVectorMagnitude), drivePoseDelta.theta);
 
-            if (nextWaypoint.getT() > 0.7 && currentRobotVel != null) {
+            if (nextWaypoint.getT() > toggleVelocityBasedStopping && currentRobotVel != null) {
                 double xDist = sign(activePath.end().vec().minus(projectedPoseOnCurve.vec()).x) * Math.sqrt(-currentRobotVel.x * currentRobotVel.x / (2 * forwardDeceleration));
                 double yDist = sign(activePath.end().vec().minus(projectedPoseOnCurve.vec()).y) * Math.sqrt(-currentRobotVel.y * currentRobotVel.y / (2 * lateralDeceleration));
 
@@ -252,6 +255,8 @@ public class Follower {
                     Vec2d zeroPowerGoalCorrection = activePath.end().vec().minus(zeroPowerVec);
                     double correctionMag = DRIVE.calculate(0, zeroPowerGoalCorrection.mag/activePath.end().vec().distTo(projectedPoseOnCurve.vec()));
                     driveVector = new Vec2d(clamp(-1, 1, correctionMag), zeroPowerGoalCorrection.theta);
+                    lastVelStoppingCorrectedVec = driveVector;
+                    lastVelStoppingCorrectedMag = correctionMag;
                 }
             }
 
@@ -302,5 +307,13 @@ public class Follower {
     }
     public static double clamp(double min, double max, double val) {
         return Math.min(Math.max(min, val), max);
+    }
+
+    public double getVelocityBasedStoppingToggle() {
+        return toggleVelocityBasedStopping;
+    }
+
+    public void setToggleVelocityBasedStopping(double toggleVelocityBasedStopping) {
+        this.toggleVelocityBasedStopping = toggleVelocityBasedStopping;
     }
 }
