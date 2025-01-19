@@ -81,8 +81,19 @@ public class Follower {
         this.path = null;
         this.holdingPose = null;
         this.isBusy = true;
-        activePathLength = -999;
-        currentIndex = 0;
+        this.activePathLength = -999;
+        this.currentIndex = 0;
+    }
+
+    public void breakFollowing() {
+        this.pathSequence = null;
+        this.path = null;
+        this.holdingPose = null;
+        this.activePathLength = -999;
+        this.currentIndex = 0;
+        this.isBusy = false;
+        this.endTime = -1;
+        this.lastLoopTime = -1;
     }
 
     public WheelSpeeds update(Pose2d currentRobotPose, Pose2d currentRobotVelocity) {
@@ -106,7 +117,7 @@ public class Follower {
             }
             return getVector(pathSequence.get(currentIndex), currentRobotPose, currentRobotVelocity, false);
         }
-        return null;
+        return new WheelSpeeds(0, 0, 0, 0);
     }
     public WheelSpeeds getVector(Path activePath, Pose2d currentRobotPose, Pose2d currentRobotVelocity, boolean finalPath) {
         Pose2d projectedPose = activePath.getProjectedPose(currentRobotPose);
