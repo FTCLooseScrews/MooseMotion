@@ -115,10 +115,7 @@ public class Follower {
             return getVector(path, currentRobotPose, currentRobotVelocity, true);
         }
         if (pathSequence != null) {
-            if (currentIndex == pathSequence.size()-1) {
-                return getVector(pathSequence.get(currentIndex), currentRobotPose, currentRobotVelocity, true);
-            }
-            return getVector(pathSequence.get(currentIndex), currentRobotPose, currentRobotVelocity, false);
+            return getVector(pathSequence.get(currentIndex), currentRobotPose, currentRobotVelocity, currentIndex == pathSequence.size() - 1);
         }
         return new WheelSpeeds(0, 0, 0, 0);
     }
