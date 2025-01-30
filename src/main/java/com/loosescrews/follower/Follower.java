@@ -231,7 +231,7 @@ public class Follower {
 
 
     private Vec2d getDriveVector(Path activePath, Pose2d currentRobotPose, Pose2d projectedPoseOnCurve, Pose2d currentRobotVel, boolean finalPath) {
-        double wpIndex = activePath.getCurve().getNextWaypointIndex(currentRobotPose, lastRobotPose);
+        int wpIndex = activePath.getCurve().getNextWaypointIndex(currentRobotPose, lastRobotPose);
         nextWaypoint = wpIndex > -1 ? activePath.getCurve().getWaypoints().get(wpIndex) : null;
 
         lastProjectedPose = projectedPoseOnCurve;
