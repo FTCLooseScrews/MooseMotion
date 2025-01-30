@@ -59,6 +59,20 @@ public class Line extends ParametricCurve {
     }
 
     @Override
+    public int getNextWaypointIndex(Pose2d pose, Pose2d last) {
+        if (last == null) {
+            return 0;
+        }
+        for (int i = 0; i < waypoints.size(); i++) {
+            Waypoint waypoint = waypoints.get(i);
+            if (waypoint.getWaypointVec().distTo(Vec2d.fromCartesian(x1, y1)) > pose.vec().distTo(Vec2d.fromCartesian(x1, y1))) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    @Override
     public double length() {
         return Vec2d.fromCartesian(x2-x1, y2-y1).norm();
     }

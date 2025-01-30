@@ -27,11 +27,14 @@ public class Follower {
     protected Path path;
     protected Pose2d holdingPose = null;
     protected Pose2d lastRobotPose = null;
+    private double maxAcceleration = 200;
+    private double maxVelocity = 40;
     private boolean isBusy = false;
 
     private final PIDFController TRANSLATIONAL;
     private final PIDFController DRIVE;
     private final PIDFController HEADING;
+    private final PIDFController VELOCITY;
 
     //For centripetal force
     private final double mass;
@@ -46,10 +49,11 @@ public class Follower {
     private double endTime = -1;
     private double toggleVelocityBasedStopping = 0.7;
 
-    public Follower(PIDFController T, PIDFController D, PIDFController H, double mass, double scalingf, double forwardDeceleration, double lateralDeceleration, double timeout) {
+    public Follower(PIDFController T, PIDFController D, PIDFController H, PIDFController V, double mass, double scalingf, double forwardDeceleration, double lateralDeceleration, double timeout) {
         this.TRANSLATIONAL = T;
         this.DRIVE = D;
         this.HEADING = H;
+        this.VELOCITY = V;
 
         this.mass = mass;
         this.scalingf = scalingf;
@@ -61,8 +65,8 @@ public class Follower {
         this.timeout = timeout;
     }
 
-    public Follower(PIDFController T, PIDFController D, PIDFController H, double mass, double scalingf, double forwardDeceleration, double lateralDeceleration) {
-        this(T, D, H, mass, scalingf, forwardDeceleration, lateralDeceleration, 1.2);
+    public Follower(PIDFController T, PIDFController D, PIDFController H, PIDFController V, double mass, double scalingf, double forwardDeceleration, double lateralDeceleration) {
+        this(T, D, H, V, mass, scalingf, forwardDeceleration, lateralDeceleration, 1.2);
     }
 
     public void followPath(Path path) {
@@ -227,7 +231,9 @@ public class Follower {
 
 
     private Vec2d getDriveVector(Path activePath, Pose2d currentRobotPose, Pose2d projectedPoseOnCurve, Pose2d currentRobotVel, boolean finalPath) {
-        nextWaypoint = activePath.getNextWaypoint(currentRobotPose, lastRobotPose);
+        double wpIndex = activePath.getCurve().getNextWaypointIndex(currentRobotPose, lastRobotPose);
+        nextWaypoint = wpIndex > -1 ? activePath.getCurve().getWaypoints().get(wpIndex) : null;
+
         lastProjectedPose = projectedPoseOnCurve;
 
         if (activePathLength < 0) {
@@ -241,6 +247,11 @@ public class Follower {
             Vec2d drivePoseDelta = nextWaypointVec.minus(projectedPoseOnCurve.vec());
 
             double driveVectorMagnitude = activePath.getSpeedConstraint();
+            if (activePathLength > 0 && currentRobotVel != null) {
+                MotionProfile pathProf = new MotionProfile(activePathLength, maxAcceleration, maxVelocity);
+                double targetVel = pathProf.getVelocity(activePathLength - activePath.getCurve().lengthFromWaypoint(wpIndex));
+                driveVectorMagnitude = VELOCITY.calculate(currentRobotVel.norm(), targetVel);
+            }
             Vec2d driveVector = new Vec2d(clamp(-1, 1, driveVectorMagnitude), drivePoseDelta.theta);
 
             if (nextWaypoint.getT() > toggleVelocityBasedStopping && currentRobotVel != null) {
@@ -266,6 +277,14 @@ public class Follower {
 
     public double sign(double num) {
         return num>=0?1:-1;
+    }
+
+    public void setMaxAcceleration(double accel) {
+        this.maxAcceleration = accel;
+    }
+
+    public void setMaxVelocity(double vel){
+        this.maxVelocity = vel;
     }
 
     public double scale (Vec2d base, Vec2d scaling) {

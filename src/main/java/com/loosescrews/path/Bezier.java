@@ -54,6 +54,28 @@ public class Bezier extends ParametricCurve {
 
         return null;
     }
+
+    @Override
+    public int getNextWaypointIndex(Pose2d pose, Pose2d last) {
+        ProjectedPoint point = ProjectedPoint.projectFrom(this, pose);
+
+        if (point.getT() == 0) return 0;
+
+        for (int i = 1; i < waypoints.size(); i++) {
+            if (waypoints.get(i).getT() >= point.getT()) {
+                if (i >= 995) {
+                    return -1;
+                }
+                if (waypoints.get(i).getWaypointVec().distTo(pose.vec()) <=
+                        waypoints.get(i-1).getWaypointVec().distTo(pose.vec())) {
+                    return i == waypoints.size()-1 ? i : i+1;
+                }
+                return i;
+            }
+        }
+
+        return -1;
+    }
     public Vec2d get(double t) {
         return Vec2d.fromCartesian(x.get(t), y.get(t));
     }
