@@ -27,8 +27,8 @@ public class Follower {
     protected Path path;
     protected Pose2d holdingPose = null;
     protected Pose2d lastRobotPose = null;
-    private double maxAcceleration = 200;
-    private double maxVelocity = 40;
+    public double maxAcceleration = 200;
+    public double maxVelocity = 40;
     private boolean isBusy = false;
 
     private final PIDFController TRANSLATIONAL;
